@@ -22,6 +22,8 @@ export interface UserEntity {
   email: string;
   avatarUrl: string;
   status: 'ACTIVE' | 'LOCKED' | 'UNDER_REVIEW';
+  lastSeen?: string;
+  location?: string;
 }
 
 export interface AnomalyEvent {
@@ -40,4 +42,33 @@ export interface ChartDataPoint {
   time: string;
   score: number;
   events: number;
+}
+
+export interface ActivityLog {
+  id: string;
+  action: string;
+  timestamp: string;
+  resource: string;
+  result: 'SUCCESS' | 'FAILURE' | 'BLOCKED';
+  riskScore: number;
+}
+
+export interface UserStats {
+  loginFailures: number;
+  dataAccessed: string;
+  privilegeChanges: number;
+  afterHoursActivity: number;
+}
+
+export interface HeatmapPoint {
+  day: string;
+  hour: number;
+  value: number; // 0-10 activity intensity
+}
+
+export interface RadarMetric {
+  subject: string;
+  A: number; // User
+  B: number; // Baseline/Peer Group
+  fullMark: number;
 }
