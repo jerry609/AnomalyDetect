@@ -1,4 +1,4 @@
-import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats } from "./types";
+import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus } from "./types";
 
 export const MOCK_USERS: UserEntity[] = [
   {
@@ -67,7 +67,7 @@ export const MOCK_EVENTS: AnomalyEvent[] = [
     id: 'evt-102',
     userId: 'u-001',
     timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    type: EventType.LOGIN,
+    type: EventType.IMPOSSIBLE_TRAVEL,
     description: 'Impossible Travel: Login from Lagos right after London',
     riskLevel: RiskLevel.HIGH,
     details: { prevLoc: 'London, UK', currLoc: 'Lagos, NG' },
@@ -108,7 +108,7 @@ export const RISK_TREND_DATA: ChartDataPoint[] = [
   { time: '23:59', score: 55, events: 8 },
 ];
 
-// --- New Data for User Detail View ---
+// --- User Detail Data ---
 
 export const SELECTED_USER_STATS: UserStats = {
   loginFailures: 14,
@@ -135,21 +135,14 @@ export const ACTIVITY_LOGS: ActivityLog[] = [
   { id: '6', action: 'Login', timestamp: '5 hours ago', resource: 'Office 365', result: 'FAILURE', riskScore: 40 },
 ];
 
-// Generate simple Heatmap data (7 days x 24 hours)
 export const generateHeatmapData = (): HeatmapPoint[] => {
   const data: HeatmapPoint[] = [];
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  
   days.forEach(day => {
     for (let h = 0; h < 24; h++) {
-      // Simulate normal working hours (9-18)
       let val = (h >= 9 && h <= 18) && (day !== 'Sat' && day !== 'Sun') ? Math.floor(Math.random() * 5) + 3 : 0;
-      
-      // Simulate Anomaly: High activity on Saturday night at 2 AM
       if (day === 'Sat' && h === 2) val = 10;
-      // Simulate Anomaly: Late night Friday
       if (day === 'Fri' && h === 23) val = 8;
-
       data.push({ day, hour: h, value: val });
     }
   });
@@ -157,3 +150,77 @@ export const generateHeatmapData = (): HeatmapPoint[] => {
 };
 
 export const HEATMAP_DATA = generateHeatmapData();
+
+// --- Alerts Data ---
+
+export const MOCK_ALERTS: Alert[] = [
+  {
+    id: 'ALT-2024-001',
+    title: 'Potential Data Exfiltration via S3',
+    severity: RiskLevel.CRITICAL,
+    status: AlertStatus.NEW,
+    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    entityId: 'u-001',
+    source: 'DLP System',
+    tags: ['Data Loss', 'AWS', 'Insider Threat'],
+    description: 'User uploaded 4.5GB of encrypted archives to an unlisted personal S3 bucket.'
+  },
+  {
+    id: 'ALT-2024-002',
+    title: 'Impossible Travel Detected',
+    severity: RiskLevel.HIGH,
+    status: AlertStatus.INVESTIGATING,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    entityId: 'u-001',
+    assignee: 'J. Doe',
+    source: 'Identity Provider',
+    tags: ['Geo-velocity', 'Account Compromise'],
+    description: 'Concurrent sessions detected in London (UK) and Lagos (NG) within 15 minutes.'
+  },
+  {
+    id: 'ALT-2024-003',
+    title: 'Unauthorized Admin Access',
+    severity: RiskLevel.MEDIUM,
+    status: AlertStatus.RESOLVED,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    entityId: 'u-002',
+    assignee: 'Admin User',
+    source: 'PAM',
+    tags: ['Privilege Escalation'],
+    description: 'User attempted to access "Root" group capabilities without an active change request ticket.'
+  },
+  {
+    id: 'ALT-2024-004',
+    title: 'Multiple Failed MFA Challenges',
+    severity: RiskLevel.MEDIUM,
+    status: AlertStatus.NEW,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    entityId: 'u-004',
+    source: 'Okta',
+    tags: ['Brute Force', 'Authentication'],
+    description: '15 failed MFA push notifications rejected by user device in 5 minutes.'
+  },
+  {
+    id: 'ALT-2024-005',
+    title: 'Malware Signature Match',
+    severity: RiskLevel.HIGH,
+    status: AlertStatus.NEW,
+    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    entityId: 'u-003',
+    source: 'Endpoint Protection',
+    tags: ['Malware', 'Endpoint'],
+    description: 'Endpoint detection flagged "Trojan.Win32.Generic" in Downloads folder.'
+  },
+  {
+    id: 'ALT-2024-006',
+    title: 'Port Scanning Activity',
+    severity: RiskLevel.LOW,
+    status: AlertStatus.FALSE_POSITIVE,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+    entityId: 'u-001',
+    assignee: 'NetSec Team',
+    source: 'Network Firewall',
+    tags: ['Reconnaissance'],
+    description: 'Internal IP scan detected. Verified as scheduled vulnerability scan.'
+  }
+];

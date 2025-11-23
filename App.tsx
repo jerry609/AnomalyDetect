@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import UserDetail from './components/UserDetail';
+import AlertsView from './components/AlertsView';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -12,6 +13,8 @@ const App: React.FC = () => {
         return <Dashboard />;
       case 'users':
         return <UserDetail onBack={() => setActiveTab('dashboard')} />;
+      case 'alerts':
+        return <AlertsView />;
       default:
         return (
           <div className="flex items-center justify-center h-screen text-slate-500">

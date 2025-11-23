@@ -10,7 +10,9 @@ export enum EventType {
   FILE_ACCESS = 'FILE_ACCESS',
   API_CALL = 'API_CALL',
   DATA_EXFILTRATION = 'DATA_EXFILTRATION',
-  PRIVILEGE_ESCALATION = 'PRIVILEGE_ESCALATION'
+  PRIVILEGE_ESCALATION = 'PRIVILEGE_ESCALATION',
+  MALWARE_DETECTED = 'MALWARE_DETECTED',
+  IMPOSSIBLE_TRAVEL = 'IMPOSSIBLE_TRAVEL'
 }
 
 export interface UserEntity {
@@ -71,4 +73,26 @@ export interface RadarMetric {
   A: number; // User
   B: number; // Baseline/Peer Group
   fullMark: number;
+}
+
+// --- New Types for Alerts & Incidents ---
+
+export enum AlertStatus {
+  NEW = 'NEW',
+  INVESTIGATING = 'INVESTIGATING',
+  RESOLVED = 'RESOLVED',
+  FALSE_POSITIVE = 'FALSE_POSITIVE'
+}
+
+export interface Alert {
+  id: string;
+  title: string;
+  severity: RiskLevel;
+  status: AlertStatus;
+  timestamp: string;
+  assignee?: string;
+  entityId: string; // Refers to UserEntity.id
+  source: string; // e.g., "Firewall", "Identity Provider"
+  tags: string[];
+  description: string;
 }
