@@ -96,3 +96,23 @@ export interface Alert {
   tags: string[];
   description: string;
 }
+
+// --- New Types for Investigation Graph ---
+
+export type NodeType = 'USER' | 'IP' | 'FILE' | 'PROCESS' | 'DOMAIN';
+
+export interface GraphNode {
+  id: string;
+  type: NodeType;
+  label: string;
+  x: number;
+  y: number;
+  risk: number; // 0-100
+}
+
+export interface GraphLink {
+  source: string;
+  target: string;
+  label: string;
+  active?: boolean;
+}

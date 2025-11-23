@@ -1,4 +1,4 @@
-import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus } from "./types";
+import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus, GraphNode, GraphLink } from "./types";
 
 export const MOCK_USERS: UserEntity[] = [
   {
@@ -223,4 +223,34 @@ export const MOCK_ALERTS: Alert[] = [
     tags: ['Reconnaissance'],
     description: 'Internal IP scan detected. Verified as scheduled vulnerability scan.'
   }
+];
+
+// --- Investigation Data ---
+
+export const INVESTIGATION_GRAPH_NODES: GraphNode[] = [
+  { id: 'u1', type: 'USER', label: 'Alice Chen', x: 400, y: 300, risk: 92 },
+  { id: 'ip1', type: 'IP', label: '10.0.0.52', x: 250, y: 300, risk: 40 },
+  { id: 'ip2', type: 'IP', label: '197.210.X.X', x: 250, y: 150, risk: 85 },
+  { id: 'f1', type: 'FILE', label: 'passwords.txt', x: 550, y: 300, risk: 90 },
+  { id: 'f2', type: 'FILE', label: 'Q3_Report.pdf', x: 550, y: 400, risk: 10 },
+  { id: 'd1', type: 'DOMAIN', label: 'suspicious-site.com', x: 100, y: 150, risk: 95 },
+  { id: 'p1', type: 'PROCESS', label: 'powershell.exe', x: 400, y: 450, risk: 70 },
+];
+
+export const INVESTIGATION_GRAPH_LINKS: GraphLink[] = [
+  { source: 'u1', target: 'ip1', label: 'Logged In' },
+  { source: 'u1', target: 'ip2', label: 'Remote Access', active: true },
+  { source: 'ip2', target: 'd1', label: 'C2 Traffic' },
+  { source: 'ip1', target: 'f1', label: 'Accessed' },
+  { source: 'ip1', target: 'f2', label: 'Accessed' },
+  { source: 'u1', target: 'p1', label: 'Spawned' },
+];
+
+export const FORENSIC_LOGS = [
+  { time: '2024-05-20 14:22:10', type: 'PROCESS_START', src: '10.0.0.52', user: 'alice.chen', details: 'Started powershell.exe -encodedCommand...', risk: 88 },
+  { time: '2024-05-20 14:22:15', type: 'FILE_ACCESS', src: '10.0.0.52', user: 'alice.chen', details: 'Read C:\\Users\\Public\\passwords.txt', risk: 95 },
+  { time: '2024-05-20 14:23:05', type: 'NETWORK_CONN', src: '10.0.0.52', user: 'alice.chen', details: 'Outbound connect to 197.210.X.X:443', risk: 75 },
+  { time: '2024-05-20 14:25:00', type: 'DATA_TRANSFER', src: '10.0.0.52', user: 'alice.chen', details: 'Upload 45MB to external host', risk: 65 },
+  { time: '2024-05-20 14:28:11', type: 'AUTH_SUCCESS', src: '197.210.X.X', user: 'alice.chen', details: 'VPN Session Established', risk: 80 },
+  { time: '2024-05-20 14:30:22', type: 'API_CALL', src: '10.0.0.52', user: 'alice.chen', details: 'GET /api/v1/customers/export', risk: 50 },
 ];
