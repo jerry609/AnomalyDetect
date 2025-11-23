@@ -1,19 +1,124 @@
 import React, { useState } from 'react';
-import { Save, Bell, Shield, Database, Webhook, UserCog, Mail, Lock } from 'lucide-react';
+import { Save, Bell, Shield, Database, Webhook, UserCog, Mail, Lock, FileClock, History, Download } from 'lucide-react';
+import { MOCK_SYSTEM_AUDIT_LOGS } from '../constants';
+import { SystemAuditLog } from '../types';
 
 const SettingsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
+  const [logs, setLogs] = useState<SystemAuditLog[]>(MOCK_SYSTEM_AUDIT_LOGS);
+  const [showToast, setShowToast] = useState(false);
+
+  // Initial State mimicking "saved" configuration
+  const [settings, setSettings] = useState({
+    activityRetention: '30 Days',
+    archiveRetention: '1 Year',
+    riskThreshold: 80,
+    criticalThreshold: 95,
+    socEmail: 'soc-alerts@sentinel.corp'
+  });
+
+  // State to track changes before save
+  const [formState, setFormState] = useState(settings);
 
   const tabs = [
     { id: 'general', label: 'General & Retention', icon: Database },
     { id: 'integrations', label: 'Integrations', icon: Webhook },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'access', label: 'Access Control', icon: UserCog },
+    { id: 'audit', label: 'Audit Logs', icon: FileClock },
   ];
 
+  const handleSave = () => {
+    const newLogs: SystemAuditLog[] = [];
+    const timestamp = new Date().toISOString();
+
+    // Check for changes and create logs
+    if (formState.activityRetention !== settings.activityRetention) {
+      newLogs.push({
+        id: `audit-${Date.now()}-1`,
+        timestamp,
+        user: 'Admin User',
+        setting: 'Activity Logs Retention',
+        oldValue: settings.activityRetention,
+        newValue: formState.activityRetention
+      });
+    }
+
+    if (formState.archiveRetention !== settings.archiveRetention) {
+      newLogs.push({
+        id: `audit-${Date.now()}-2`,
+        timestamp,
+        user: 'Admin User',
+        setting: 'Archived Events Retention',
+        oldValue: settings.archiveRetention,
+        newValue: formState.archiveRetention
+      });
+    }
+
+    if (formState.riskThreshold !== settings.riskThreshold) {
+      newLogs.push({
+        id: `audit-${Date.now()}-3`,
+        timestamp,
+        user: 'Admin User',
+        setting: 'High Risk Threshold',
+        oldValue: settings.riskThreshold.toString(),
+        newValue: formState.riskThreshold.toString()
+      });
+    }
+
+    if (formState.criticalThreshold !== settings.criticalThreshold) {
+      newLogs.push({
+        id: `audit-${Date.now()}-4`,
+        timestamp,
+        user: 'Admin User',
+        setting: 'Critical Alert Trigger',
+        oldValue: settings.criticalThreshold.toString(),
+        newValue: formState.criticalThreshold.toString()
+      });
+    }
+
+    if (formState.socEmail !== settings.socEmail) {
+      newLogs.push({
+        id: `audit-${Date.now()}-5`,
+        timestamp,
+        user: 'Admin User',
+        setting: 'SOC Email Distribution',
+        oldValue: settings.socEmail,
+        newValue: formState.socEmail
+      });
+    }
+
+    // Update state
+    if (newLogs.length > 0) {
+      setSettings(formState);
+      setLogs(prev => [...newLogs, ...prev]);
+      // Update global mock (optional, for persistency simulation within session)
+      MOCK_SYSTEM_AUDIT_LOGS.unshift(...newLogs);
+      
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
+  const handleDiscard = () => {
+    setFormState(settings);
+  };
+
   return (
-    <div className="p-8 bg-[#0f172a] min-h-screen">
+    <div className="p-8 bg-[#0f172a] min-h-screen relative">
       <h1 className="text-2xl font-bold text-white mb-6">System Settings</h1>
+
+      {showToast && (
+        <div className="absolute top-8 right-8 z-50 animate-slide-in-right">
+          <div className="bg-emerald-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+             <div className="bg-white/20 p-1 rounded-full"><Save className="w-4 h-4" /></div>
+             <div>
+               <div className="font-bold text-sm">Configuration Saved</div>
+               <div className="text-xs opacity-90">Audit log entries created.</div>
+             </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-8">
         
@@ -46,7 +151,11 @@ const SettingsView: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-300">Activity Logs (Hot Storage)</label>
-                    <select className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    <select 
+                      value={formState.activityRetention}
+                      onChange={(e) => setFormState({...formState, activityRetention: e.target.value})}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
                       <option>30 Days</option>
                       <option>90 Days</option>
                       <option>1 Year</option>
@@ -54,7 +163,11 @@ const SettingsView: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-300">Archived Events (Cold Storage)</label>
-                    <select className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    <select 
+                      value={formState.archiveRetention}
+                      onChange={(e) => setFormState({...formState, archiveRetention: e.target.value})}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
                       <option>1 Year</option>
                       <option>3 Years</option>
                       <option>7 Years</option>
@@ -71,16 +184,28 @@ const SettingsView: React.FC = () => {
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-slate-300">High Risk Threshold</span>
-                      <span className="text-indigo-400 font-bold">80</span>
+                      <span className="text-indigo-400 font-bold">{formState.riskThreshold}</span>
                     </div>
-                    <input type="range" className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                    <input 
+                      type="range" 
+                      min="1" max="100"
+                      value={formState.riskThreshold}
+                      onChange={(e) => setFormState({...formState, riskThreshold: parseInt(e.target.value)})}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500" 
+                    />
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-slate-300">Critical Alert Trigger</span>
-                      <span className="text-red-400 font-bold">95</span>
+                      <span className="text-red-400 font-bold">{formState.criticalThreshold}</span>
                     </div>
-                    <input type="range" className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500" />
+                    <input 
+                      type="range" 
+                      min="1" max="100"
+                      value={formState.criticalThreshold}
+                      onChange={(e) => setFormState({...formState, criticalThreshold: parseInt(e.target.value)})}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500" 
+                    />
                   </div>
                 </div>
               </div>
@@ -170,7 +295,12 @@ const SettingsView: React.FC = () => {
                  <div className="flex gap-2">
                    <div className="relative flex-1">
                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                     <input type="email" defaultValue="soc-alerts@sentinel.corp" className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-slate-200 text-sm" />
+                     <input 
+                       type="email" 
+                       value={formState.socEmail}
+                       onChange={(e) => setFormState({...formState, socEmail: e.target.value})}
+                       className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                     />
                    </div>
                    <button className="bg-slate-800 text-slate-300 px-4 py-2 rounded-lg text-sm hover:bg-slate-700">Update</button>
                  </div>
@@ -178,14 +308,55 @@ const SettingsView: React.FC = () => {
              </div>
           )}
 
-          {/* Action Footer for all tabs */}
-          <div className="mt-10 pt-6 border-t border-slate-800 flex justify-end gap-3">
-             <button className="px-4 py-2 text-sm text-slate-400 hover:text-white font-medium">Discard Changes</button>
-             <button className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg shadow-indigo-900/50">
-               <Save className="w-4 h-4" />
-               Save Configuration
-             </button>
-          </div>
+          {activeTab === 'audit' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-lg font-bold text-white">Audit Trail</h2>
+                <button className="text-xs text-indigo-400 hover:text-white flex items-center gap-1">
+                  <Download className="w-3 h-3" /> Export CSV
+                </button>
+              </div>
+              <p className="text-slate-400 text-sm mb-4">Chronological record of system configuration changes.</p>
+              
+              <div className="space-y-3">
+                {logs.map((log) => (
+                  <div key={log.id} className="bg-slate-800/50 rounded-lg p-4 border border-slate-800 flex items-start gap-4">
+                    <div className="mt-1 p-2 bg-slate-800 rounded-full border border-slate-700">
+                      <History className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                         <span className="text-sm font-bold text-slate-200">{log.setting}</span>
+                         <span className="text-xs text-slate-500 font-mono">{new Date(log.timestamp).toLocaleString()}</span>
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1">
+                        Changed by <span className="text-indigo-400">{log.user}</span>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2 text-xs font-mono bg-slate-900/50 p-2 rounded">
+                        <span className="text-red-400 line-through opacity-70">{log.oldValue}</span>
+                        <span className="text-slate-500">→</span>
+                        <span className="text-emerald-400">{log.newValue}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {logs.length === 0 && (
+                  <div className="text-center p-8 text-slate-500">No audit logs found.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action Footer for configuration tabs */}
+          {activeTab !== 'audit' && activeTab !== 'access' && (
+            <div className="mt-10 pt-6 border-t border-slate-800 flex justify-end gap-3">
+               <button onClick={handleDiscard} className="px-4 py-2 text-sm text-slate-400 hover:text-white font-medium">Discard Changes</button>
+               <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg shadow-indigo-900/50">
+                 <Save className="w-4 h-4" />
+                 Save Configuration
+               </button>
+            </div>
+          )}
 
         </div>
       </div>

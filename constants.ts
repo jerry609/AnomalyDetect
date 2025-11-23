@@ -1,4 +1,5 @@
-import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus, GraphNode, GraphLink, Report } from "./types";
+
+import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus, GraphNode, GraphLink, Report, SystemAuditLog } from "./types";
 
 export const MOCK_USERS: UserEntity[] = [
   {
@@ -263,4 +264,17 @@ export const MOCK_REPORTS: Report[] = [
   { id: 'rpt-103', name: 'PCI-DSS Compliance Audit', type: 'COMPLIANCE', generatedBy: 'Auditor', generatedAt: '2024-10-14T14:15:00Z', size: '15 MB', status: 'GENERATING' },
   { id: 'rpt-104', name: 'Incident #492 Post-Mortem', type: 'INCIDENT_SUMMARY', generatedBy: 'J. Doe', generatedAt: '2024-09-28T11:20:00Z', size: '1.2 MB', status: 'READY' },
   { id: 'rpt-105', name: 'Monthly Threat Landscape', type: 'EXECUTIVE', generatedBy: 'System', generatedAt: '2024-09-01T08:00:00Z', size: '3.1 MB', status: 'READY' },
+];
+
+// --- Settings Audit Logs ---
+
+export const MOCK_SYSTEM_AUDIT_LOGS: SystemAuditLog[] = [
+  {
+    id: 'audit-001',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    user: 'Admin User',
+    setting: 'Risk Scoring Threshold - High',
+    oldValue: '75',
+    newValue: '80'
+  }
 ];

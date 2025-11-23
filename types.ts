@@ -1,3 +1,4 @@
+
 export enum RiskLevel {
   LOW = 'LOW',
   MEDIUM = 'MEDIUM',
@@ -131,4 +132,15 @@ export interface Report {
   size: string;
   status: ReportStatus;
   downloadUrl?: string;
+}
+
+// --- New Types for Settings Audit ---
+
+export interface SystemAuditLog {
+  id: string;
+  timestamp: string;
+  user: string;
+  setting: string;
+  oldValue: string;
+  newValue: string;
 }
