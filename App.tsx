@@ -4,6 +4,8 @@ import Dashboard from './components/Dashboard';
 import UserDetail from './components/UserDetail';
 import AlertsView from './components/AlertsView';
 import InvestigationView from './components/InvestigationView';
+import ReportsView from './components/ReportsView';
+import SettingsView from './components/SettingsView';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -18,13 +20,17 @@ const App: React.FC = () => {
         return <AlertsView />;
       case 'investigation':
         return <InvestigationView />;
+      case 'reports':
+        return <ReportsView />;
+      case 'settings':
+        return <SettingsView />;
       default:
         return (
           <div className="flex items-center justify-center h-screen text-slate-500">
              <div className="text-center">
                <div className="mb-4 text-4xl opacity-20">🚧</div>
-               <h2 className="text-xl font-semibold mb-2">Module Under Development</h2>
-               <p className="max-w-md mx-auto">The {activeTab} module is currently being built. Please return to the Dashboard for the live demonstration.</p>
+               <h2 className="text-xl font-semibold mb-2">Module Not Found</h2>
+               <p className="max-w-md mx-auto">The requested module "{activeTab}" does not exist.</p>
              </div>
           </div>
         );

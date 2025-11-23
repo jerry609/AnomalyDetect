@@ -1,4 +1,4 @@
-import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus, GraphNode, GraphLink } from "./types";
+import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus, GraphNode, GraphLink, Report } from "./types";
 
 export const MOCK_USERS: UserEntity[] = [
   {
@@ -253,4 +253,14 @@ export const FORENSIC_LOGS = [
   { time: '2024-05-20 14:25:00', type: 'DATA_TRANSFER', src: '10.0.0.52', user: 'alice.chen', details: 'Upload 45MB to external host', risk: 65 },
   { time: '2024-05-20 14:28:11', type: 'AUTH_SUCCESS', src: '197.210.X.X', user: 'alice.chen', details: 'VPN Session Established', risk: 80 },
   { time: '2024-05-20 14:30:22', type: 'API_CALL', src: '10.0.0.52', user: 'alice.chen', details: 'GET /api/v1/customers/export', risk: 50 },
+];
+
+// --- Reports Data ---
+
+export const MOCK_REPORTS: Report[] = [
+  { id: 'rpt-101', name: 'Q3 Executive Security Summary', type: 'EXECUTIVE', generatedBy: 'System', generatedAt: '2024-10-01T08:00:00Z', size: '2.4 MB', status: 'READY' },
+  { id: 'rpt-102', name: 'Weekly High Risk Users', type: 'USER_RISK', generatedBy: 'Admin', generatedAt: '2024-10-15T09:30:00Z', size: '850 KB', status: 'READY' },
+  { id: 'rpt-103', name: 'PCI-DSS Compliance Audit', type: 'COMPLIANCE', generatedBy: 'Auditor', generatedAt: '2024-10-14T14:15:00Z', size: '15 MB', status: 'GENERATING' },
+  { id: 'rpt-104', name: 'Incident #492 Post-Mortem', type: 'INCIDENT_SUMMARY', generatedBy: 'J. Doe', generatedAt: '2024-09-28T11:20:00Z', size: '1.2 MB', status: 'READY' },
+  { id: 'rpt-105', name: 'Monthly Threat Landscape', type: 'EXECUTIVE', generatedBy: 'System', generatedAt: '2024-09-01T08:00:00Z', size: '3.1 MB', status: 'READY' },
 ];

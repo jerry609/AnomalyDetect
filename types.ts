@@ -116,3 +116,19 @@ export interface GraphLink {
   label: string;
   active?: boolean;
 }
+
+// --- New Types for Reports ---
+
+export type ReportType = 'EXECUTIVE' | 'COMPLIANCE' | 'USER_RISK' | 'INCIDENT_SUMMARY';
+export type ReportStatus = 'READY' | 'GENERATING' | 'FAILED';
+
+export interface Report {
+  id: string;
+  name: string;
+  type: ReportType;
+  generatedBy: string;
+  generatedAt: string;
+  size: string;
+  status: ReportStatus;
+  downloadUrl?: string;
+}
