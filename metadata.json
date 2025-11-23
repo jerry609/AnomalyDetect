@@ -1,0 +1,5 @@
+{
+  "name": "Sentinel UEBA",
+  "description": "Enterprise-grade User and Entity Behavior Analytics dashboard featuring real-time anomaly detection, risk scoring, and AI-driven threat analysis.",
+  "requestFramePermissions": []
+}
