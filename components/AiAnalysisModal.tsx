@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Sparkles, AlertTriangle, ShieldCheck, Fingerprint, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { X, Sparkles, AlertTriangle, ShieldCheck, Fingerprint, CheckCircle2, ArrowRight, Loader2, XCircle } from 'lucide-react';
 import { AnomalyEvent, UserEntity } from '../types';
 import { analyzeThreat } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
@@ -11,6 +11,13 @@ interface AiAnalysisModalProps {
   user: UserEntity | undefined;
 }
 
+interface ToastNotification {
+  type: 'success' | 'error';
+  title: string;
+  message: string;
+  actions?: string[];
+}
+
 const AiAnalysisModal: React.FC<AiAnalysisModalProps> = ({ isOpen, onClose, event, user }) => {
   const [analysis, setAnalysis] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -18,6 +25,7 @@ const AiAnalysisModal: React.FC<AiAnalysisModalProps> = ({ isOpen, onClose, even
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
   const [manualAction, setManualAction] = useState<string>('');
   const [executing, setExecuting] = useState(false);
+  const [toast, setToast] = useState<ToastNotification | null>(null);
 
   useEffect(() => {
     if (isOpen && event && user) {
@@ -26,6 +34,7 @@ const AiAnalysisModal: React.FC<AiAnalysisModalProps> = ({ isOpen, onClose, even
       setView('analysis'); // Reset view on open
       setSelectedActions([]);
       setManualAction('');
+      setToast(null);
       
       analyzeThreat(event, user)
         .then(result => {
@@ -56,12 +65,37 @@ const AiAnalysisModal: React.FC<AiAnalysisModalProps> = ({ isOpen, onClose, even
 
   const handleExecute = () => {
     setExecuting(true);
+    setToast(null);
+
     // Simulate API call
     setTimeout(() => {
       setExecuting(false);
-      onClose();
-      // In a real app, this would trigger a toast
-      alert(`Successfully executed ${selectedActions.length} actions.`);
+      
+      const executedActions = [...selectedActions];
+      if (manualAction.trim()) {
+        executedActions.push("Manual Note Logged");
+      }
+
+      if (executedActions.length === 0) {
+        setToast({
+          type: 'error',
+          title: 'No Actions Selected',
+          message: 'Please select at least one action or add a manual note.'
+        });
+        return;
+      }
+
+      setToast({
+        type: 'success',
+        title: 'Response Executed Successfully',
+        message: 'The following actions have been initiated:',
+        actions: executedActions
+      });
+
+      // Close modal after showing success message
+      setTimeout(() => {
+        onClose();
+      }, 3000);
     }, 1500);
   };
 
@@ -69,7 +103,45 @@ const AiAnalysisModal: React.FC<AiAnalysisModalProps> = ({ isOpen, onClose, even
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative">
+        
+        {/* Toast Notification */}
+        {toast && (
+          <div className="absolute top-4 left-4 right-4 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
+            <div className={`p-4 rounded-xl border shadow-2xl flex items-start gap-3 ${
+              toast.type === 'success' 
+                ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-50' 
+                : 'bg-red-950/90 border-red-500/50 text-red-50'
+            }`}>
+              <div className={`p-1 rounded-full flex-shrink-0 ${
+                toast.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+              }`}>
+                {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-sm">{toast.title}</h4>
+                <p className="text-xs opacity-90 mt-1">{toast.message}</p>
+                {toast.actions && (
+                  <ul className="mt-2 space-y-1">
+                    {toast.actions.map((action, idx) => (
+                      <li key={idx} className="text-xs flex items-center gap-2 opacity-80">
+                         <span className="w-1.5 h-1.5 bg-current rounded-full" />
+                         {action}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <button 
+                onClick={() => setToast(null)} 
+                className="p-1 hover:bg-white/10 rounded transition-colors"
+              >
+                <X className="w-4 h-4 opacity-70" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-gradient-to-r from-indigo-900/20 to-slate-900">
           <div className="flex items-center gap-3">
@@ -188,7 +260,7 @@ const AiAnalysisModal: React.FC<AiAnalysisModalProps> = ({ isOpen, onClose, even
             ) : (
               <button 
                 onClick={handleExecute}
-                disabled={selectedActions.length === 0 && !manualAction}
+                disabled={executing}
                 className="px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-lg shadow-emerald-900/50 transition-all font-medium text-sm flex items-center gap-2"
               >
                 {executing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
