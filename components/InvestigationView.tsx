@@ -390,7 +390,7 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                               x1={source.x} y1={source.y} 
                               x2={target.x} y2={target.y} 
                               stroke={isLinkConnectedToSelection ? '#818cf8' : (link.active ? '#ef4444' : '#334155')} 
-                              strokeWidth={isLinkConnectedToSelection ? 2.5 : (link.active ? 2 : 1)}
+                              strokeWidth={isLinkConnectedToSelection ? 3 : (link.active ? 2 : 1)}
                               strokeDasharray={link.active && !isLinkConnectedToSelection ? "5,5" : ""}
                               markerEnd="url(#arrowhead)"
                             />
@@ -457,7 +457,11 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                             
                             {/* HTML Node Content via ForeignObject */}
                             <foreignObject x={node.x - 24} y={node.y - 24} width="48" height="48">
-                              <div className={`w-full h-full rounded-full border-2 flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${getNodeColor(node.type, isIsolated)} ${isSelected ? 'ring-2 ring-white scale-110' : ''}`}>
+                              <div className={`w-full h-full rounded-full border-2 flex items-center justify-center shadow-lg transition-transform hover:scale-110 
+                                ${getNodeColor(node.type, isIsolated)} 
+                                ${isSelected ? 'ring-2 ring-white scale-110' : ''}
+                                ${isConnected && !isSelected ? 'ring-2 ring-indigo-400/50 scale-105' : ''}
+                              `}>
                                 {isIsolated ? <Ban className="w-5 h-5 text-red-500" /> : <Icon className="w-5 h-5 text-white" />}
                               </div>
                             </foreignObject>
