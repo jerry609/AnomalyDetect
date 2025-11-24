@@ -1,7 +1,8 @@
+
 import React from 'react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Shield, Clock, HardDrive, Key, AlertTriangle, Download, XCircle, CheckCircle, Lock, MoreHorizontal, ArrowLeft } from 'lucide-react';
-import { MOCK_USERS, RADAR_DATA, SELECTED_USER_STATS, ACTIVITY_LOGS, HEATMAP_DATA } from '../constants';
+import { MOCK_USERS, RADAR_DATA, SELECTED_USER_STATS, ACTIVITY_LOGS, HEATMAP_DATA, USER_RISK_HISTORY } from '../constants';
 import { RiskLevel } from '../types';
 import RiskBadge from './RiskBadge';
 
@@ -92,6 +93,34 @@ const UserDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         ))}
       </div>
+      
+      {/* Risk History Chart */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-white">Risk Score Timeline</h3>
+          <p className="text-xs text-slate-500">Historical risk progression over the last 7 days</p>
+        </div>
+        <div className="h-[250px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={USER_RISK_HISTORY} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorRisk" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
+                itemStyle={{ color: '#f87171' }}
+              />
+              <Area type="monotone" dataKey="score" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorRisk)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Baseline Comparison (Radar) */}
@@ -108,7 +137,7 @@ const UserDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
                 <Radar name="User" dataKey="A" stroke="#ef4444" strokeWidth={2} fill="#ef4444" fillOpacity={0.3} />
                 <Radar name="Dept Avg" dataKey="B" stroke="#6366f1" strokeWidth={2} fill="#6366f1" fillOpacity={0.1} />
-                <RechartsTooltip 
+                <Tooltip 
                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
                    itemStyle={{ color: '#fff' }}
                 />

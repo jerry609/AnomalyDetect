@@ -152,6 +152,16 @@ export const generateHeatmapData = (): HeatmapPoint[] => {
 
 export const HEATMAP_DATA = generateHeatmapData();
 
+export const USER_RISK_HISTORY = [
+  { date: 'May 14', score: 25 },
+  { date: 'May 15', score: 28 },
+  { date: 'May 16', score: 22 },
+  { date: 'May 17', score: 35 },
+  { date: 'May 18', score: 55 },
+  { date: 'May 19', score: 82 },
+  { date: 'May 20', score: 92 },
+];
+
 // --- Alerts Data ---
 
 export const MOCK_ALERTS: Alert[] = [
