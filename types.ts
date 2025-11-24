@@ -144,3 +144,21 @@ export interface SystemAuditLog {
   oldValue: string;
   newValue: string;
 }
+
+// --- RBAC Types ---
+
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  ANALYST = 'ANALYST',
+  VIEWER = 'VIEWER'
+}
+
+export enum Permission {
+  VIEW_SETTINGS = 'VIEW_SETTINGS',
+  EDIT_GENERAL = 'EDIT_GENERAL',
+  EDIT_RISK_CONFIG = 'EDIT_RISK_CONFIG',
+  MANAGE_INTEGRATIONS = 'MANAGE_INTEGRATIONS',
+  MANAGE_NOTIFICATIONS = 'MANAGE_NOTIFICATIONS',
+  MANAGE_ACCESS = 'MANAGE_ACCESS',
+  VIEW_AUDIT = 'VIEW_AUDIT'
+}

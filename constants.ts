@@ -1,5 +1,5 @@
 
-import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus, GraphNode, GraphLink, Report, SystemAuditLog } from "./types";
+import { AnomalyEvent, ChartDataPoint, EventType, RiskLevel, UserEntity, ActivityLog, HeatmapPoint, RadarMetric, UserStats, Alert, AlertStatus, GraphNode, GraphLink, Report, SystemAuditLog, UserRole, Permission } from "./types";
 
 export const MOCK_USERS: UserEntity[] = [
   {
@@ -278,3 +278,25 @@ export const MOCK_SYSTEM_AUDIT_LOGS: SystemAuditLog[] = [
     newValue: '80'
   }
 ];
+
+// --- RBAC Config ---
+
+export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  [UserRole.ADMIN]: [
+    Permission.VIEW_SETTINGS,
+    Permission.EDIT_GENERAL,
+    Permission.EDIT_RISK_CONFIG,
+    Permission.MANAGE_INTEGRATIONS,
+    Permission.MANAGE_NOTIFICATIONS,
+    Permission.MANAGE_ACCESS,
+    Permission.VIEW_AUDIT
+  ],
+  [UserRole.ANALYST]: [
+    Permission.VIEW_SETTINGS,
+    Permission.EDIT_GENERAL,
+    Permission.VIEW_AUDIT
+  ],
+  [UserRole.VIEWER]: [
+    Permission.VIEW_SETTINGS
+  ]
+};
