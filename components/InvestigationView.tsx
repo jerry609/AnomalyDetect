@@ -70,6 +70,17 @@ const InvestigationView: React.FC = () => {
     ).map(n => n.id));
   }, [query, nodes]);
 
+  // NEW: Connected nodes based on selection for highlighting
+  const connectedIds = useMemo(() => {
+    if (!selectedNodeId) return new Set<string>();
+    const ids = new Set<string>();
+    INVESTIGATION_GRAPH_LINKS.forEach(link => {
+      if (link.source === selectedNodeId) ids.add(link.target);
+      if (link.target === selectedNodeId) ids.add(link.source);
+    });
+    return ids;
+  }, [selectedNodeId]);
+
   // Timeline Data Aggregation
   const timelineData = useMemo(() => {
     const counts: Record<string, { time: string, risk: number, count: number }> = {};
@@ -313,14 +324,18 @@ const InvestigationView: React.FC = () => {
                         const target = nodes.find(n => n.id === link.target);
                         if (!source || !target) return null;
 
+                        // Calculate visual state
+                        const isLinkConnectedToSelection = selectedNodeId ? (link.source === selectedNodeId || link.target === selectedNodeId) : false;
+                        const isLinkDimmed = selectedNodeId ? !isLinkConnectedToSelection : false;
+
                         return (
-                          <g key={i}>
+                          <g key={i} className={`transition-opacity duration-500 ${isLinkDimmed ? 'opacity-10' : 'opacity-100'}`}>
                             <line 
                               x1={source.x} y1={source.y} 
                               x2={target.x} y2={target.y} 
-                              stroke={link.active ? '#ef4444' : '#334155'} 
-                              strokeWidth={link.active ? 2 : 1}
-                              strokeDasharray={link.active ? "5,5" : ""}
+                              stroke={isLinkConnectedToSelection ? '#818cf8' : (link.active ? '#ef4444' : '#334155')} 
+                              strokeWidth={isLinkConnectedToSelection ? 2.5 : (link.active ? 2 : 1)}
+                              strokeDasharray={link.active && !isLinkConnectedToSelection ? "5,5" : ""}
                               markerEnd="url(#arrowhead)"
                             />
                             {/* Link Label Background */}
@@ -335,7 +350,7 @@ const InvestigationView: React.FC = () => {
                               x={(source.x + target.x)/2} 
                               y={(source.y + target.y)/2 + 4} 
                               textAnchor="middle"
-                              fill="#64748b"
+                              fill={isLinkConnectedToSelection ? '#a5b4fc' : "#64748b"}
                               fontSize="10"
                               className="font-mono pointer-events-auto select-none"
                             >
@@ -349,13 +364,23 @@ const InvestigationView: React.FC = () => {
                       {nodes.map((node) => {
                         const Icon = getNodeIcon(node.type);
                         const isSelected = selectedNodeId === node.id;
-                        const isHighlighted = highlightedNodeIds.has(node.id);
-                        const isDimmed = highlightedNodeIds.size > 0 && !isHighlighted;
+                        const isConnected = connectedIds.has(node.id);
+                        const isSearchMatch = highlightedNodeIds.has(node.id);
                         
+                        // Determine dimming state
+                        let isNodeDimmed = false;
+                        if (selectedNodeId) {
+                           // If a node is selected, dim everything except the node itself and its neighbors
+                           isNodeDimmed = !isSelected && !isConnected;
+                        } else if (highlightedNodeIds.size > 0) {
+                           // If searching, dim everything that doesn't match
+                           isNodeDimmed = !isSearchMatch;
+                        }
+
                         return (
                           <g 
                             key={node.id} 
-                            className={`pointer-events-auto transition-opacity duration-300 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}
+                            className={`pointer-events-auto transition-all duration-500 ${isNodeDimmed ? 'opacity-10 grayscale' : 'opacity-100'}`}
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               setDragNodeId(node.id);
@@ -375,7 +400,7 @@ const InvestigationView: React.FC = () => {
                             
                             {/* HTML Node Content via ForeignObject */}
                             <foreignObject x={node.x - 24} y={node.y - 24} width="48" height="48">
-                              <div className={`w-full h-full rounded-full border-2 flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${getNodeColor(node.type)} ${isSelected ? 'ring-2 ring-white' : ''}`}>
+                              <div className={`w-full h-full rounded-full border-2 flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${getNodeColor(node.type)} ${isSelected ? 'ring-2 ring-white scale-110' : ''}`}>
                                 <Icon className="w-5 h-5 text-white" />
                               </div>
                             </foreignObject>
@@ -384,7 +409,7 @@ const InvestigationView: React.FC = () => {
                             <text 
                               x={node.x} y={node.y + 35} 
                               textAnchor="middle" 
-                              className="fill-slate-200 text-xs font-bold pointer-events-none select-none drop-shadow-md shadow-black"
+                              className={`fill-slate-200 text-xs font-bold pointer-events-none select-none drop-shadow-md shadow-black transition-all ${isSelected ? 'text-white text-sm' : ''}`}
                             >
                               {node.label}
                             </text>
