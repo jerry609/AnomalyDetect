@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, Filter, Calendar, Share2, Download, ZoomIn, ZoomOut, Maximize, Play, Pause, FileText, Activity, Globe, Laptop, Terminal, User, X, CheckCircle2, AlertTriangle, ShieldAlert, Loader2, Ban, ShieldBan, ArrowRight } from 'lucide-react';
 import { INVESTIGATION_GRAPH_NODES, INVESTIGATION_GRAPH_LINKS, FORENSIC_LOGS } from '../constants';
@@ -385,7 +386,16 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onVie
 
                         // Calculate visual state
                         const isLinkConnectedToSelection = selectedNodeId ? (link.source === selectedNodeId || link.target === selectedNodeId) : false;
-                        const isLinkDimmed = selectedNodeId ? !isLinkConnectedToSelection : false;
+                        
+                        // Link Dimming Logic
+                        // 1. If a node is selected, dim non-connected links
+                        // 2. If searching, dim links that do not connect two matching nodes (isolates the search results)
+                        let isLinkDimmed = false;
+                        if (selectedNodeId) {
+                           isLinkDimmed = !isLinkConnectedToSelection;
+                        } else if (highlightedNodeIds.size > 0) {
+                           isLinkDimmed = !(highlightedNodeIds.has(link.source) && highlightedNodeIds.has(link.target));
+                        }
 
                         // Dynamic style for link based on selection
                         const strokeColor = isLinkConnectedToSelection ? '#818cf8' : (link.active ? '#ef4444' : '#334155');
@@ -462,6 +472,11 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onVie
                             {isSelected && (
                               <circle cx={node.x} cy={node.y} r="32" fill="none" stroke="#6366f1" strokeWidth="2" strokeDasharray="4 4" className="animate-spin-slow" />
                             )}
+                            
+                            {/* Search Match Ring - Visual Highlight */}
+                            {isSearchMatch && !isSelected && (
+                              <circle cx={node.x} cy={node.y} r="34" fill="none" stroke="#facc15" strokeWidth="2" strokeDasharray="6 4" className="animate-pulse opacity-80" />
+                            )}
 
                             {/* Risk Halo (if Critical) */}
                             {node.risk > 80 && !isIsolated && !isNodeDimmed && (
@@ -474,6 +489,7 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onVie
                                 ${getNodeColor(node.type, isIsolated)} 
                                 ${isSelected ? 'ring-2 ring-white scale-110' : ''}
                                 ${isConnected && !isSelected ? 'ring-2 ring-indigo-400/50 scale-105' : ''}
+                                ${isSearchMatch && !isSelected ? 'ring-2 ring-yellow-400 scale-110 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : ''}
                               `}>
                                 {isIsolated ? <Ban className="w-5 h-5 text-red-500" /> : <Icon className="w-5 h-5 text-white" />}
                               </div>
