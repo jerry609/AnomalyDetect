@@ -140,11 +140,18 @@ const UserDetail: React.FC<UserDetailProps> = ({ onBack, userId }) => {
                 <PolarGrid stroke="#334155" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
-                <Radar name="User" dataKey="A" stroke="#ef4444" strokeWidth={2} fill="#ef4444" fillOpacity={0.3} />
+                <Radar name="User Score" dataKey="A" stroke="#ef4444" strokeWidth={2} fill="#ef4444" fillOpacity={0.3} />
                 <Radar name="Dept Avg" dataKey="B" stroke="#6366f1" strokeWidth={2} fill="#6366f1" fillOpacity={0.1} />
                 <Tooltip 
-                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
-                   itemStyle={{ color: '#fff' }}
+                   contentStyle={{ 
+                     backgroundColor: '#0f172a', 
+                     borderColor: '#334155', 
+                     borderRadius: '0.5rem',
+                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                     padding: '12px'
+                   }}
+                   itemStyle={{ color: '#e2e8f0', fontSize: '0.875rem', fontWeight: 500 }}
+                   labelStyle={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                 />
               </RadarChart>
             </ResponsiveContainer>
