@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, Filter, Calendar, Share2, Download, ZoomIn, ZoomOut, Maximize, Play, Pause, FileText, Activity, Globe, Laptop, Terminal, User, X, CheckCircle2, AlertTriangle, ShieldAlert, Loader2, Ban, ShieldBan, ArrowRight } from 'lucide-react';
+import { Search, Filter, Calendar, Share2, Download, ZoomIn, ZoomOut, Maximize, Play, Pause, FileText, Activity, Globe, Laptop, Terminal, User, X, CheckCircle2, AlertTriangle, ShieldAlert, Loader2, Ban, ShieldBan, ArrowRight, Sparkles } from 'lucide-react';
 import { INVESTIGATION_GRAPH_NODES, INVESTIGATION_GRAPH_LINKS, FORENSIC_LOGS } from '../constants';
 import { NodeType, RiskLevel, GraphNode } from '../types';
 import RiskBadge from './RiskBadge';
@@ -55,6 +55,28 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onVie
       case 'DOMAIN': return 'bg-pink-600 border-pink-500';
       default: return 'bg-slate-500 border-slate-400';
     }
+  };
+
+  // Calculate AI Score based on node risk and correlated logs
+  const getNodeAiScore = (node: GraphNode) => {
+    // Correlate logs by checking user, src ip, or details for filename/process
+    const relatedLogs = FORENSIC_LOGS.filter(log => 
+      log.user.toLowerCase() === node.label.toLowerCase() || 
+      log.src === node.label ||
+      log.details.includes(node.label)
+    );
+
+    // If no dynamic logs found, fallback to the static risk but slightly dampened to show "no active anomaly"
+    if (relatedLogs.length === 0) return node.risk;
+
+    const avgLogRisk = relatedLogs.reduce((sum, log) => sum + log.risk, 0) / relatedLogs.length;
+    // Frequency penalty: Boost score if multiple events are found (max 20 points boost)
+    const frequencyBoost = Math.min(relatedLogs.length * 4, 20);
+    
+    // AI Score formula: 30% Base Entity Risk + 50% Active Log Risk + 20% Frequency Boost
+    const score = Math.round((node.risk * 0.3) + (avgLogRisk * 0.5) + frequencyBoost);
+    
+    return Math.min(score, 100);
   };
 
   // --- Derived Data ---
@@ -443,6 +465,7 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onVie
                         const isConnected = connectedIds.has(node.id);
                         const isSearchMatch = highlightedNodeIds.has(node.id);
                         const isIsolated = isolatedNodes.has(node.id);
+                        const aiScore = getNodeAiScore(node);
                         
                         // Determine dimming state: Dim if a node IS selected AND this node is neither selected nor connected
                         let isNodeDimmed = false;
@@ -505,12 +528,17 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onVie
                               {isIsolated && " (BLOCKED)"}
                             </text>
 
-                            {/* Risk Badge on Node */}
-                            {node.risk > 0 && !isIsolated && (
-                              <g transform={`translate(${node.x + 14}, ${node.y - 24})`}>
-                                <rect width="20" height="12" rx="3" fill={node.risk > 75 ? '#ef4444' : '#f59e0b'} />
-                                <text x="10" y="9" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold">{node.risk}</text>
-                              </g>
+                            {/* AI-Powered Anomaly Score Badge on Node */}
+                            {!isIsolated && !isNodeDimmed && (
+                              <foreignObject x={node.x + 10} y={node.y - 40} width="64" height="24">
+                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border shadow-lg transform transition-all hover:scale-110 ${
+                                  aiScore > 80 ? 'bg-gradient-to-r from-red-600 to-orange-600 border-red-400 animate-pulse' : 
+                                  'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400'
+                                }`}>
+                                  <Sparkles className="w-2.5 h-2.5 text-white" />
+                                  <span className="text-[10px] font-bold text-white font-mono leading-none">{aiScore}</span>
+                                </div>
+                              </foreignObject>
                             )}
                           </g>
                         );
@@ -649,6 +677,7 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onVie
               
               const isIsolated = isolatedNodes.has(node.id);
               const isIsolating = isolatingId === node.id;
+              const aiScore = getNodeAiScore(node);
 
               return (
                 <div className="flex flex-col h-full">
@@ -675,15 +704,18 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onVie
                     </div>
 
                     <div className="bg-slate-950 rounded-xl p-5 border border-slate-800">
-                      <div className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">Current Risk Assessment</div>
+                      <div className="text-xs text-indigo-400 mb-2 uppercase tracking-wider font-bold flex items-center gap-2">
+                        <Sparkles className="w-3 h-3" />
+                        AI-Driven Risk Score
+                      </div>
                       <div className="flex items-end justify-between">
-                        <div className="text-4xl font-bold text-white leading-none">{node.risk}</div>
-                        <RiskBadge level={node.risk > 80 ? RiskLevel.CRITICAL : node.risk > 50 ? RiskLevel.HIGH : RiskLevel.MEDIUM} />
+                        <div className="text-4xl font-bold text-white leading-none">{aiScore}</div>
+                        <RiskBadge level={aiScore > 80 ? RiskLevel.CRITICAL : aiScore > 50 ? RiskLevel.HIGH : RiskLevel.MEDIUM} />
                       </div>
                       <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden">
                         <div 
-                          className={`h-full rounded-full ${node.risk > 80 ? 'bg-red-500' : node.risk > 50 ? 'bg-orange-500' : 'bg-emerald-500'}`} 
-                          style={{ width: `${node.risk}%` }}
+                          className={`h-full rounded-full ${aiScore > 80 ? 'bg-red-500' : aiScore > 50 ? 'bg-orange-500' : 'bg-emerald-500'}`} 
+                          style={{ width: `${aiScore}%` }}
                         />
                       </div>
                     </div>
