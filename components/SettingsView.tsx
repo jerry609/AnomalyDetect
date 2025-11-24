@@ -1,8 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, Bell, Shield, Database, Webhook, UserCog, Mail, Lock, FileClock, History, Download, AlertTriangle } from 'lucide-react';
+import { Save, Bell, Shield, Database, Webhook, UserCog, Mail, Lock, FileClock, History, Download, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { MOCK_SYSTEM_AUDIT_LOGS, ROLE_PERMISSIONS } from '../constants';
 import { SystemAuditLog, UserRole, Permission } from '../types';
+
+interface RiskFactor {
+  id: string;
+  name: string;
+  description: string;
+  multiplier: number;
+}
 
 const SettingsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -18,11 +25,16 @@ const SettingsView: React.FC = () => {
     archiveRetention: '1 Year',
     riskThreshold: 80,
     criticalThreshold: 95,
-    socEmail: 'soc-alerts@sentinel.corp'
+    socEmail: 'soc-alerts@sentinel.corp',
+    customRiskFactors: [
+      { id: 'rf-1', name: 'Flight Risk', description: 'Employees with upcoming resignation dates', multiplier: 1.5 },
+      { id: 'rf-2', name: 'Privileged User', description: 'Admins with root access capabilities', multiplier: 1.2 }
+    ] as RiskFactor[]
   });
 
   // State to track changes before save
   const [formState, setFormState] = useState(settings);
+  const [newFactor, setNewFactor] = useState({ name: '', description: '', multiplier: 1.1 });
 
   // Helper to check permissions
   const hasPermission = (permission: Permission) => {
@@ -106,6 +118,17 @@ const SettingsView: React.FC = () => {
       });
     }
 
+    if (JSON.stringify(formState.customRiskFactors) !== JSON.stringify(settings.customRiskFactors)) {
+      newLogs.push({
+        id: `audit-${Date.now()}-6`,
+        timestamp,
+        user,
+        setting: 'Custom Risk Factors',
+        oldValue: `${settings.customRiskFactors.length} factors`,
+        newValue: `${formState.customRiskFactors.length} factors`
+      });
+    }
+
     // Update state
     if (newLogs.length > 0) {
       setSettings(formState);
@@ -120,6 +143,31 @@ const SettingsView: React.FC = () => {
 
   const handleDiscard = () => {
     setFormState(settings);
+    setNewFactor({ name: '', description: '', multiplier: 1.1 });
+  };
+
+  const handleAddFactor = () => {
+    if (!newFactor.name || !newFactor.description) return;
+    
+    const factor: RiskFactor = {
+      id: `rf-${Date.now()}`,
+      name: newFactor.name,
+      description: newFactor.description,
+      multiplier: Number(newFactor.multiplier)
+    };
+
+    setFormState(prev => ({
+      ...prev,
+      customRiskFactors: [...prev.customRiskFactors, factor]
+    }));
+    setNewFactor({ name: '', description: '', multiplier: 1.1 });
+  };
+
+  const handleRemoveFactor = (id: string) => {
+    setFormState(prev => ({
+      ...prev,
+      customRiskFactors: prev.customRiskFactors.filter(f => f.id !== id)
+    }));
   };
 
   return (
@@ -290,6 +338,91 @@ const SettingsView: React.FC = () => {
                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500 disabled:opacity-50 disabled:cursor-not-allowed" 
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Custom Risk Factors Section */}
+                <div className="pt-8 border-t border-slate-800">
+                  <h2 className="text-lg font-bold text-white mb-1">Custom Risk Factors</h2>
+                  <p className="text-slate-400 text-sm mb-4">Define external factors that influence the overall risk calculation.</p>
+                  
+                  <div className="space-y-4">
+                    {/* List of Factors */}
+                    {formState.customRiskFactors.map((factor) => (
+                      <div key={factor.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 flex items-center justify-between group">
+                         <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <span className="font-bold text-white">{factor.name}</span>
+                              <span className="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded">
+                                x{factor.multiplier} Multiplier
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-400 mt-1">{factor.description}</p>
+                         </div>
+                         {hasPermission(Permission.EDIT_RISK_CONFIG) && (
+                           <button 
+                             onClick={() => handleRemoveFactor(factor.id)}
+                             className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-700 rounded transition-colors opacity-0 group-hover:opacity-100"
+                           >
+                             <Trash2 className="w-4 h-4" />
+                           </button>
+                         )}
+                      </div>
+                    ))}
+
+                    {/* Add New Factor Form */}
+                    {hasPermission(Permission.EDIT_RISK_CONFIG) ? (
+                      <div className="bg-slate-800/30 border border-slate-700/50 border-dashed rounded-lg p-4">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Add New Factor</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                          <div className="md:col-span-4">
+                            <label className="text-xs text-slate-400 block mb-1">Factor Name</label>
+                            <input 
+                              type="text" 
+                              value={newFactor.name}
+                              onChange={(e) => setNewFactor({...newFactor, name: e.target.value})}
+                              placeholder="e.g. Flight Risk"
+                              className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                            />
+                          </div>
+                          <div className="md:col-span-5">
+                            <label className="text-xs text-slate-400 block mb-1">Description</label>
+                            <input 
+                              type="text" 
+                              value={newFactor.description}
+                              onChange={(e) => setNewFactor({...newFactor, description: e.target.value})}
+                              placeholder="Description of the risk factor"
+                              className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                             <label className="text-xs text-slate-400 block mb-1">Multiplier</label>
+                             <input 
+                               type="number" 
+                               step="0.1" 
+                               min="1.0"
+                               max="5.0"
+                               value={newFactor.multiplier}
+                               onChange={(e) => setNewFactor({...newFactor, multiplier: parseFloat(e.target.value)})}
+                               className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                             />
+                          </div>
+                          <div className="md:col-span-1">
+                            <button 
+                              onClick={handleAddFactor}
+                              disabled={!newFactor.name || !newFactor.description}
+                              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded px-3 py-2 flex items-center justify-center transition-colors"
+                            >
+                              <Plus className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-500 italic text-center py-2">
+                        You do not have permission to add custom risk factors.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

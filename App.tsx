@@ -9,17 +9,36 @@ import SettingsView from './components/SettingsView';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
+  const handleNavigateToUser = (userId: string) => {
+    setSelectedUserId(userId);
+    setActiveTab('users');
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard />;
       case 'users':
-        return <UserDetail onBack={() => setActiveTab('dashboard')} />;
+        return (
+          <UserDetail 
+            userId={selectedUserId} 
+            onBack={() => {
+              setSelectedUserId(null);
+              setActiveTab('dashboard');
+            }} 
+          />
+        );
       case 'alerts':
         return <AlertsView />;
       case 'investigation':
-        return <InvestigationView onNavigate={setActiveTab} />;
+        return (
+          <InvestigationView 
+            onNavigate={setActiveTab} 
+            onViewProfile={handleNavigateToUser} 
+          />
+        );
       case 'reports':
         return <ReportsView />;
       case 'settings':

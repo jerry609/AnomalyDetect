@@ -7,9 +7,10 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 
 interface InvestigationViewProps {
   onNavigate?: (tab: string) => void;
+  onViewProfile?: (userId: string) => void;
 }
 
-const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => {
+const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate, onViewProfile }) => {
   // --- State ---
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'graph' | 'timeline' | 'logs'>('graph');
@@ -44,7 +45,7 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
   };
 
   const getNodeColor = (type: NodeType, isIsolated: boolean) => {
-    if (isIsolated) return 'bg-slate-800 border-red-500/50';
+    if (isIsolated) return 'bg-slate-900 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]';
     switch (type) {
       case 'USER': return 'bg-indigo-500 border-indigo-400';
       case 'IP': return 'bg-emerald-500 border-emerald-400';
@@ -164,20 +165,22 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
 
   const handleViewProfile = (node: GraphNode) => {
     if (node.type === 'USER') {
-      if (onNavigate) {
-        onNavigate('users');
+      if (onViewProfile) {
+        onViewProfile(node.id); // Navigate to specific user profile
+      } else if (onNavigate) {
+        onNavigate('users'); // Fallback
       } else {
-        showToast("Navigation not available in preview mode.", 'error');
+        showToast("Navigation not available.", 'error');
       }
     } else {
-      showToast(`Full profiles are currently only available for User entities.`, 'info');
+      showToast(`Profiles are only available for Users. (${node.type})`, 'info');
     }
   };
 
   const handleIsolateEntity = (nodeId: string) => {
     setIsolatingId(nodeId);
     
-    // Simulate API call
+    // Simulate API call with delay
     setTimeout(() => {
       setIsolatedNodes(prev => {
         const next = new Set(prev);
@@ -384,15 +387,20 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                         const isLinkConnectedToSelection = selectedNodeId ? (link.source === selectedNodeId || link.target === selectedNodeId) : false;
                         const isLinkDimmed = selectedNodeId ? !isLinkConnectedToSelection : false;
 
+                        // Dynamic style for link based on selection
+                        const strokeColor = isLinkConnectedToSelection ? '#818cf8' : (link.active ? '#ef4444' : '#334155');
+                        const strokeWidth = isLinkConnectedToSelection ? 3 : (link.active ? 2 : 1);
+                        const opacity = isLinkDimmed ? 0.1 : 1;
+
                         return (
-                          <g key={i} className={`transition-opacity duration-500 ${isLinkDimmed ? 'opacity-10' : 'opacity-100'}`}>
+                          <g key={i} style={{ opacity, transition: 'opacity 0.5s' }}>
                             <line 
                               x1={source.x} y1={source.y} 
                               x2={target.x} y2={target.y} 
-                              stroke={isLinkConnectedToSelection ? '#818cf8' : (link.active ? '#ef4444' : '#334155')} 
-                              strokeWidth={isLinkConnectedToSelection ? 3 : (link.active ? 2 : 1)}
+                              stroke={strokeColor} 
+                              strokeWidth={strokeWidth}
                               strokeDasharray={link.active && !isLinkConnectedToSelection ? "5,5" : ""}
-                              markerEnd="url(#arrowhead)"
+                              markerEnd={!isLinkDimmed ? "url(#arrowhead)" : ""}
                             />
                             {/* Link Label Background */}
                             <rect 
@@ -401,6 +409,7 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                               width="60" height="16" 
                               fill="#0f172a" 
                               rx="4"
+                              opacity={isLinkDimmed ? 0 : 1}
                             />
                             <text
                               x={(source.x + target.x)/2} 
@@ -408,6 +417,7 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                               textAnchor="middle"
                               fill={isLinkConnectedToSelection ? '#a5b4fc' : "#64748b"}
                               fontSize="10"
+                              opacity={isLinkDimmed ? 0 : 1}
                               className="font-mono pointer-events-auto select-none"
                             >
                               {link.label}
@@ -424,10 +434,9 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                         const isSearchMatch = highlightedNodeIds.has(node.id);
                         const isIsolated = isolatedNodes.has(node.id);
                         
-                        // Determine dimming state
+                        // Determine dimming state: Dim if a node IS selected AND this node is neither selected nor connected
                         let isNodeDimmed = false;
                         if (selectedNodeId) {
-                           // If a node is selected, dim everything except the node itself and its neighbors
                            isNodeDimmed = !isSelected && !isConnected;
                         } else if (highlightedNodeIds.size > 0) {
                            // If searching, dim everything that doesn't match
@@ -437,13 +446,17 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                         return (
                           <g 
                             key={node.id} 
-                            className={`pointer-events-auto transition-all duration-500 ${isNodeDimmed ? 'opacity-10 grayscale' : 'opacity-100'}`}
+                            className={`pointer-events-auto transition-all duration-500`}
+                            style={{ 
+                              cursor: 'grab', 
+                              opacity: isNodeDimmed ? 0.1 : 1, 
+                              filter: isNodeDimmed ? 'grayscale(100%)' : 'none' 
+                            }}
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               setDragNodeId(node.id);
                               setSelectedNodeId(node.id);
                             }}
-                            style={{ cursor: 'grab' }}
                           >
                             {/* Selection Ring */}
                             {isSelected && (
@@ -451,7 +464,7 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                             )}
 
                             {/* Risk Halo (if Critical) */}
-                            {node.risk > 80 && !isIsolated && (
+                            {node.risk > 80 && !isIsolated && !isNodeDimmed && (
                               <circle cx={node.x} cy={node.y} r="40" className="fill-red-500/10 animate-pulse" />
                             )}
                             
@@ -501,16 +514,15 @@ const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => 
                      </button>
                    )}
                 </div>
-                <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
                       data={timelineData} 
-                      onClick={(data) => {
-                        if (data && data.activePayload) {
+                      onClick={(data: any) => {
+                        if (data && data.activePayload && data.activePayload.length > 0) {
                           setSelectedTimeRange(data.activePayload[0].payload.time);
                         }
                       }}
-                      cursor="pointer"
                     >
                       <XAxis dataKey="time" stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
                       <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
