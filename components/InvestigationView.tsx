@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, Filter, Calendar, Share2, Download, ZoomIn, ZoomOut, Maximize, Play, Pause, FileText, Activity, Globe, Laptop, Terminal, User, X, CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Search, Filter, Calendar, Share2, Download, ZoomIn, ZoomOut, Maximize, Play, Pause, FileText, Activity, Globe, Laptop, Terminal, User, X, CheckCircle2, AlertTriangle, ShieldAlert, Loader2, Ban, ShieldBan, ArrowRight } from 'lucide-react';
 import { INVESTIGATION_GRAPH_NODES, INVESTIGATION_GRAPH_LINKS, FORENSIC_LOGS } from '../constants';
 import { NodeType, RiskLevel, GraphNode } from '../types';
 import RiskBadge from './RiskBadge';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const InvestigationView: React.FC = () => {
+interface InvestigationViewProps {
+  onNavigate?: (tab: string) => void;
+}
+
+const InvestigationView: React.FC<InvestigationViewProps> = ({ onNavigate }) => {
   // --- State ---
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'graph' | 'timeline' | 'logs'>('graph');
@@ -16,6 +20,11 @@ const InvestigationView: React.FC = () => {
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragNodeId, setDragNodeId] = useState<string | null>(null);
+  
+  // Action State
+  const [isolatingId, setIsolatingId] = useState<string | null>(null);
+  const [isolatedNodes, setIsolatedNodes] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
   
   // Filter State
   const [selectedTimeRange, setSelectedTimeRange] = useState<string | null>(null);
@@ -34,7 +43,8 @@ const InvestigationView: React.FC = () => {
     }
   };
 
-  const getNodeColor = (type: NodeType) => {
+  const getNodeColor = (type: NodeType, isIsolated: boolean) => {
+    if (isIsolated) return 'bg-slate-800 border-red-500/50';
     switch (type) {
       case 'USER': return 'bg-indigo-500 border-indigo-400';
       case 'IP': return 'bg-emerald-500 border-emerald-400';
@@ -70,7 +80,7 @@ const InvestigationView: React.FC = () => {
     ).map(n => n.id));
   }, [query, nodes]);
 
-  // NEW: Connected nodes based on selection for highlighting
+  // Connected nodes based on selection for highlighting
   const connectedIds = useMemo(() => {
     if (!selectedNodeId) return new Set<string>();
     const ids = new Set<string>();
@@ -98,7 +108,7 @@ const InvestigationView: React.FC = () => {
   // --- Interaction Handlers ---
 
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault(); // Prevent default if possible, though React synthetic events might limit this
+    e.preventDefault();
     const scaleFactor = 1.1;
     const delta = e.deltaY > 0 ? 1 / scaleFactor : scaleFactor;
     
@@ -145,9 +155,59 @@ const InvestigationView: React.FC = () => {
     setTransform({ x: 0, y: 0, k: 1 });
   };
 
+  // --- Action Handlers ---
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleViewProfile = (node: GraphNode) => {
+    if (node.type === 'USER') {
+      if (onNavigate) {
+        onNavigate('users');
+      } else {
+        showToast("Navigation not available in preview mode.", 'error');
+      }
+    } else {
+      showToast(`Full profiles are currently only available for User entities.`, 'info');
+    }
+  };
+
+  const handleIsolateEntity = (nodeId: string) => {
+    setIsolatingId(nodeId);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsolatedNodes(prev => {
+        const next = new Set(prev);
+        next.add(nodeId);
+        return next;
+      });
+      setIsolatingId(null);
+      showToast("Entity successfully isolated. Network traffic blocked.", 'success');
+    }, 1500);
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-[#0f172a] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#0f172a] overflow-hidden relative">
       
+      {/* Toast Notification */}
+      {toast && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-4 fade-in duration-300">
+          <div className={`px-4 py-2.5 rounded-lg border shadow-2xl flex items-center gap-2.5 ${
+            toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-50' : 
+            toast.type === 'error' ? 'bg-red-950/90 border-red-500/50 text-red-50' :
+            'bg-slate-800 border-slate-600 text-slate-200'
+          }`}>
+            {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : 
+             toast.type === 'error' ? <X className="w-4 h-4 text-red-500" /> :
+             <Activity className="w-4 h-4" />}
+            <span className="text-sm font-medium">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Top Search Bar */}
       <div className="p-4 border-b border-slate-800 bg-slate-900 flex flex-col gap-4 z-20 shadow-sm">
         <div className="flex justify-between items-center">
@@ -308,13 +368,9 @@ const InvestigationView: React.FC = () => {
                       <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
                         <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
                       </marker>
-                      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                        <feMerge>
-                          <feMergeNode in="coloredBlur"/>
-                          <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                      </filter>
+                      <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                         <line x1="0" y1="0" x2="0" y2="8" style={{stroke:'#ef4444', strokeWidth:2}} />
+                      </pattern>
                     </defs>
                     
                     <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
@@ -366,6 +422,7 @@ const InvestigationView: React.FC = () => {
                         const isSelected = selectedNodeId === node.id;
                         const isConnected = connectedIds.has(node.id);
                         const isSearchMatch = highlightedNodeIds.has(node.id);
+                        const isIsolated = isolatedNodes.has(node.id);
                         
                         // Determine dimming state
                         let isNodeDimmed = false;
@@ -394,14 +451,14 @@ const InvestigationView: React.FC = () => {
                             )}
 
                             {/* Risk Halo (if Critical) */}
-                            {node.risk > 80 && (
+                            {node.risk > 80 && !isIsolated && (
                               <circle cx={node.x} cy={node.y} r="40" className="fill-red-500/10 animate-pulse" />
                             )}
                             
                             {/* HTML Node Content via ForeignObject */}
                             <foreignObject x={node.x - 24} y={node.y - 24} width="48" height="48">
-                              <div className={`w-full h-full rounded-full border-2 flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${getNodeColor(node.type)} ${isSelected ? 'ring-2 ring-white scale-110' : ''}`}>
-                                <Icon className="w-5 h-5 text-white" />
+                              <div className={`w-full h-full rounded-full border-2 flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${getNodeColor(node.type, isIsolated)} ${isSelected ? 'ring-2 ring-white scale-110' : ''}`}>
+                                {isIsolated ? <Ban className="w-5 h-5 text-red-500" /> : <Icon className="w-5 h-5 text-white" />}
                               </div>
                             </foreignObject>
 
@@ -412,10 +469,11 @@ const InvestigationView: React.FC = () => {
                               className={`fill-slate-200 text-xs font-bold pointer-events-none select-none drop-shadow-md shadow-black transition-all ${isSelected ? 'text-white text-sm' : ''}`}
                             >
                               {node.label}
+                              {isIsolated && " (BLOCKED)"}
                             </text>
 
                             {/* Risk Badge on Node */}
-                            {node.risk > 0 && (
+                            {node.risk > 0 && !isIsolated && (
                               <g transform={`translate(${node.x + 14}, ${node.y - 24})`}>
                                 <rect width="20" height="12" rx="3" fill={node.risk > 75 ? '#ef4444' : '#f59e0b'} />
                                 <text x="10" y="9" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold">{node.risk}</text>
@@ -556,6 +614,10 @@ const InvestigationView: React.FC = () => {
            {selectedNodeId && (() => {
               const node = nodes.find(n => n.id === selectedNodeId);
               if (!node) return null;
+              
+              const isIsolated = isolatedNodes.has(node.id);
+              const isIsolating = isolatingId === node.id;
+
               return (
                 <div className="flex flex-col h-full">
                   <div className="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-900">
@@ -568,12 +630,15 @@ const InvestigationView: React.FC = () => {
                   
                   <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     <div className="flex items-center gap-4">
-                       <div className={`w-16 h-16 rounded-xl flex items-center justify-center shadow-inner ${node.risk > 80 ? 'bg-red-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
-                          {React.createElement(getNodeIcon(node.type), { className: `w-8 h-8 ${node.risk > 80 ? 'text-red-500' : 'text-slate-400'}` })}
+                       <div className={`w-16 h-16 rounded-xl flex items-center justify-center shadow-inner ${isIsolated ? 'bg-slate-800 border border-red-500/50' : node.risk > 80 ? 'bg-red-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
+                          {isIsolated ? <Ban className="w-8 h-8 text-red-500" /> : React.createElement(getNodeIcon(node.type), { className: `w-8 h-8 ${node.risk > 80 ? 'text-red-500' : 'text-slate-400'}` })}
                        </div>
                        <div>
                          <div className="text-xl font-bold text-white">{node.label}</div>
-                         <div className="text-sm text-slate-400">{node.type} Node</div>
+                         <div className="text-sm text-slate-400 flex items-center gap-1.5">
+                            {node.type} Node
+                            {isIsolated && <span className="text-red-500 font-bold text-xs border border-red-500/30 px-1.5 rounded bg-red-500/10">BLOCKED</span>}
+                         </div>
                        </div>
                     </div>
 
@@ -626,11 +691,35 @@ const InvestigationView: React.FC = () => {
                   </div>
 
                   <div className="p-4 border-t border-slate-800 bg-slate-900 grid grid-cols-2 gap-3">
-                    <button className="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-sm shadow-lg shadow-indigo-900/50 transition-colors">
+                    <button 
+                      onClick={() => handleViewProfile(node)}
+                      className="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-sm shadow-lg shadow-indigo-900/50 transition-colors flex items-center justify-center gap-2"
+                    >
                       View Profile
+                      <ArrowRight className="w-3 h-3" />
                     </button>
-                    <button className="py-2.5 border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-lg font-medium text-sm transition-colors">
-                      Isolate Entity
+                    <button 
+                      onClick={() => !isIsolated && handleIsolateEntity(node.id)}
+                      disabled={isIsolated || isIsolating}
+                      className={`py-2.5 border rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                        isIsolated 
+                          ? 'border-slate-700 text-slate-500 bg-slate-800 cursor-not-allowed'
+                          : 'border-red-500/30 text-red-400 hover:bg-red-500/10'
+                      }`}
+                    >
+                       {isIsolating ? (
+                         <>
+                           <Loader2 className="w-3 h-3 animate-spin" /> Isolating...
+                         </>
+                       ) : isIsolated ? (
+                         <>
+                           <ShieldBan className="w-3 h-3" /> Isolated
+                         </>
+                       ) : (
+                         <>
+                           <Ban className="w-3 h-3" /> Isolate Entity
+                         </>
+                       )}
                     </button>
                   </div>
                 </div>

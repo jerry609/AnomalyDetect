@@ -19,7 +19,7 @@ const App: React.FC = () => {
       case 'alerts':
         return <AlertsView />;
       case 'investigation':
-        return <InvestigationView />;
+        return <InvestigationView onNavigate={setActiveTab} />;
       case 'reports':
         return <ReportsView />;
       case 'settings':
